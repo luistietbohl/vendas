@@ -62,19 +62,30 @@ Novo pacote `com.sorveteria.bomcream.vendas.fiscal`:
 
 Configuração via `application.properties`: `focusnfe.token`, `focusnfe.ambiente` (`homologacao` | `producao`, define a base URL da API).
 
+**Mudança necessária em `VendaController`/`VendaService`**: hoje `POST /v1/vendas` responde com corpo vazio (`ResponseEntity.ok().build()`), descartando o `uid` gerado ao salvar. Para permitir emitir a nota logo após finalizar a venda, `VendaService.create` passa a retornar o `VendaDTO` salvo (com `uid` preenchido), e o controller devolve esse corpo na resposta. É uma mudança compatível — o frontend atual ignora o corpo da resposta, então nada quebra.
+
 **Sem webhook**: a Focus NFe processa a emissão de forma assíncrona em alguns casos (`processando_autorizacao`). Como o backend roda em rede local sem URL pública, o sistema não expõe endpoint de callback — o status é atualizado por consulta sob demanda (botão "Verificar status" no frontend chamando `GET /status`).
 
-## Frontend
+### Tela de checkout (`add-venda.tsx`) — ação principal
 
-Em [list-venda.tsx](../../../../vendas-front/vendas-front/src/components/venda/list-venda.tsx), no painel lateral da venda selecionada, nova seção "Nota Fiscal":
+O botão **Emitir Nota Fiscal** fica no mesmo grupo de botões do carrinho, ao lado de **Finalizar Compra** e **Imprimir** ([add-venda.tsx:696-706](../../../../vendas-front/vendas-front/src/components/venda/add-venda.tsx#L696-L706)). Fluxo:
+
+1. Operador clica **Finalizar Compra** → `finalizarVenda()` chama `VendaService.create`, que agora retorna o `uid` da venda salva. Esse `uid` é guardado num novo campo de estado (`lastVendaUid`), separado do carrinho — assim, mesmo `newVenda()` limpando os itens para a próxima venda, o botão de nota fiscal continua sabendo qual venda emitir.
+2. **Emitir Nota Fiscal** fica desabilitado até existir `lastVendaUid`; ao clicar, chama `POST /v1/notas-fiscais/{lastVendaUid}/emitir` e mostra o resultado inline, reaproveitando o componente `Alert` já usado para as mensagens de sucesso/erro da venda (mesmo padrão visual de `finalizaAlert`).
+3. Se a nota ficar `PROCESSANDO`, o mesmo botão vira **Verificar Status** até resolver; quando `AUTORIZADA`, aparece o link **Ver DANFE** (abre o PDF da Focus NFe em nova aba, para impressão manual do cupom).
+4. `lastVendaUid` é limpo quando uma nova venda é iniciada (próximo item adicionado ao carrinho ou `newVenda()`), evitando emitir nota para a venda errada.
+
+### Histórico de vendas (`list-venda.tsx`) — acompanhamento posterior
+
+No painel lateral da venda selecionada, mesma seção "Nota Fiscal" para os casos em que a emissão não foi feita no balcão (SEFAZ fora do ar, esquecimento) ou precisa ser cancelada depois:
 
 - Badge de status (Não emitida / Processando / Autorizada / Rejeitada / Cancelada)
 - Botão **Emitir Nota Fiscal** (habilitado quando `NAO_EMITIDA`, `REJEITADA` ou `ERRO` — permite reemitir)
 - Botão **Verificar Status** (quando `PROCESSANDO`)
-- Link **Ver DANFE** (quando `AUTORIZADA`) — abre o PDF da Focus NFe em nova aba para impressão manual
+- Link **Ver DANFE** (quando `AUTORIZADA`)
 - Botão **Cancelar Nota** (quando `AUTORIZADA`) com campo de justificativa obrigatório
 
-Novos arquivos espelhando o padrão existente: `src/types/nota-fiscal.type.ts`, `src/services/nota-fiscal.service.ts`.
+Novos arquivos espelhando o padrão existente: `src/types/nota-fiscal.type.ts`, `src/services/nota-fiscal.service.ts`, compartilhados pelas duas telas.
 
 Nos formulários de produto (`add-produto`/`edit-produto`), novos campos: NCM, CFOP, CSOSN, Unidade Comercial.
 
