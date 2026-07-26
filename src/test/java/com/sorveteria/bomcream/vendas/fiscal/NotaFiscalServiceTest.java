@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -107,5 +108,35 @@ class NotaFiscalServiceTest {
         when(notaFiscalRepository.findByVendaUid("venda-1")).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, () -> service.consultarStatus("venda-1"));
+    }
+
+    @Test
+    void buscarRetornaNotaExistenteSemChamarGateway() {
+        NotaFiscalService service = new NotaFiscalService(notaFiscalRepository, emissorFiscalService, vendaRepository);
+
+        NotaFiscalEntity notaExistente = NotaFiscalEntity.builder()
+                .uid("nota-1").vendaUid("venda-1").status(NotaFiscalStatus.AUTORIZADA)
+                .chaveAcesso("CHAVE123").build();
+        when(notaFiscalRepository.findByVendaUid("venda-1")).thenReturn(Optional.of(notaExistente));
+
+        NotaFiscalEntity resultado = service.buscar("venda-1");
+
+        assertEquals("nota-1", resultado.getUid());
+        assertEquals(NotaFiscalStatus.AUTORIZADA, resultado.getStatus());
+        assertEquals("CHAVE123", resultado.getChaveAcesso());
+        verifyNoInteractions(emissorFiscalService);
+    }
+
+    @Test
+    void buscarRetornaPlaceholderNaoEmitidaQuandoNaoExisteRegistro() {
+        NotaFiscalService service = new NotaFiscalService(notaFiscalRepository, emissorFiscalService, vendaRepository);
+
+        when(notaFiscalRepository.findByVendaUid("venda-1")).thenReturn(Optional.empty());
+
+        NotaFiscalEntity resultado = service.buscar("venda-1");
+
+        assertEquals("venda-1", resultado.getVendaUid());
+        assertEquals(NotaFiscalStatus.NAO_EMITIDA, resultado.getStatus());
+        verifyNoInteractions(emissorFiscalService);
     }
 }

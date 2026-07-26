@@ -30,6 +30,14 @@ public class NotaFiscalService {
         return notaFiscalRepository.save(nota);
     }
 
+    public NotaFiscalEntity buscar(String vendaId) {
+        return notaFiscalRepository.findByVendaUid(vendaId)
+                .orElseGet(() -> NotaFiscalEntity.builder()
+                        .vendaUid(vendaId)
+                        .status(NotaFiscalStatus.NAO_EMITIDA)
+                        .build());
+    }
+
     public NotaFiscalEntity consultarStatus(String vendaId) {
         NotaFiscalEntity nota = notaFiscalRepository.findByVendaUid(vendaId)
                 .orElseThrow(() -> new RuntimeException("Nota fiscal não encontrada para esta venda"));

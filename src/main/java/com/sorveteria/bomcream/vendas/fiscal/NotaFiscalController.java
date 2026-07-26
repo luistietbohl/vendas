@@ -19,6 +19,11 @@ public class NotaFiscalController {
         }
     }
 
+    @GetMapping("/{vendaId}")
+    public ResponseEntity buscar(@PathVariable String vendaId) {
+        return ResponseEntity.ok(service.buscar(vendaId));
+    }
+
     @GetMapping("/{vendaId}/status")
     public ResponseEntity status(@PathVariable String vendaId) {
         try {

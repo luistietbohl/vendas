@@ -36,6 +36,20 @@ class NotaFiscalControllerTest {
     }
 
     @Test
+    void buscarRetornaNotaPelaVendaSemSufixoStatus() throws Exception {
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new NotaFiscalController(service)).build();
+
+        NotaFiscalEntity nota = NotaFiscalEntity.builder()
+                .uid("nota-1").vendaUid("venda-1").status(NotaFiscalStatus.NAO_EMITIDA).build();
+        when(service.buscar("venda-1")).thenReturn(nota);
+
+        mockMvc.perform(get("/v1/notas-fiscais/venda-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.vendaUid").value("venda-1"))
+                .andExpect(jsonPath("$.status").value("NAO_EMITIDA"));
+    }
+
+    @Test
     void statusConsultaPelaVenda() throws Exception {
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new NotaFiscalController(service)).build();
 
