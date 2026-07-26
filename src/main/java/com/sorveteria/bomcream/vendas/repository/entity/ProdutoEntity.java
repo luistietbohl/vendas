@@ -24,5 +24,9 @@ public class ProdutoEntity {
     private BigDecimal valor;
     private String tipoMedida;
     private String categoria;
+    private String ncm;
+    private String cfop;
+    private String csosn;
+    private String unidadeComercial;
     private LocalDateTime create = LocalDateTime.now();
 }
