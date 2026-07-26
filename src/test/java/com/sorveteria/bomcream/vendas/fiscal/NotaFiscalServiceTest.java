@@ -57,6 +57,7 @@ class NotaFiscalServiceTest {
 
         NotaFiscalEntity notaExistente = NotaFiscalEntity.builder()
                 .uid("nota-1").vendaUid("venda-1").status(NotaFiscalStatus.AUTORIZADA)
+                .numero("100").serie("1")
                 .build();
         when(notaFiscalRepository.findByVendaUid("venda-1")).thenReturn(Optional.of(notaExistente));
         when(emissorFiscalService.cancelar("venda-1", "Erro no valor do item"))
@@ -70,6 +71,8 @@ class NotaFiscalServiceTest {
         assertEquals("Erro no valor do item", resultado.getJustificativaCancelamento());
         assertEquals("nota-1", resultado.getUid());
         assertNotNull(resultado.getDataCancelamento());
+        assertEquals("100", resultado.getNumero());
+        assertEquals("1", resultado.getSerie());
     }
 
     @Test
@@ -78,6 +81,7 @@ class NotaFiscalServiceTest {
 
         NotaFiscalEntity notaExistente = NotaFiscalEntity.builder()
                 .uid("nota-1").vendaUid("venda-1").status(NotaFiscalStatus.PROCESSANDO)
+                .numero("100").serie("1")
                 .build();
         when(notaFiscalRepository.findByVendaUid("venda-1")).thenReturn(Optional.of(notaExistente));
         when(emissorFiscalService.consultarStatus("venda-1")).thenReturn(
@@ -92,6 +96,8 @@ class NotaFiscalServiceTest {
 
         assertEquals(NotaFiscalStatus.AUTORIZADA, resultado.getStatus());
         assertEquals("CHAVE456", resultado.getChaveAcesso());
+        assertEquals("100", resultado.getNumero());
+        assertEquals("1", resultado.getSerie());
     }
 
     @Test
