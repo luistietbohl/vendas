@@ -52,11 +52,23 @@ public class NotaFiscalService {
 
     private void aplicarResultado(NotaFiscalEntity nota, ResultadoEmissaoFiscal resultado) {
         nota.setStatus(resultado.getStatus());
-        nota.setNumero(resultado.getNumero());
-        nota.setSerie(resultado.getSerie());
-        nota.setChaveAcesso(resultado.getChaveAcesso());
-        nota.setProtocoloAutorizacao(resultado.getProtocoloAutorizacao());
-        nota.setMensagemSefaz(resultado.getMensagemSefaz());
-        nota.setUrlDanfe(resultado.getUrlDanfe());
+        if (resultado.getNumero() != null) {
+            nota.setNumero(resultado.getNumero());
+        }
+        if (resultado.getSerie() != null) {
+            nota.setSerie(resultado.getSerie());
+        }
+        if (resultado.getChaveAcesso() != null) {
+            nota.setChaveAcesso(resultado.getChaveAcesso());
+        }
+        if (resultado.getProtocoloAutorizacao() != null) {
+            nota.setProtocoloAutorizacao(resultado.getProtocoloAutorizacao());
+        }
+        if (resultado.getMensagemSefaz() != null) {
+            nota.setMensagemSefaz(resultado.getMensagemSefaz());
+        }
+        if (resultado.getUrlDanfe() != null) {
+            nota.setUrlDanfe(resultado.getUrlDanfe());
+        }
     }
 }

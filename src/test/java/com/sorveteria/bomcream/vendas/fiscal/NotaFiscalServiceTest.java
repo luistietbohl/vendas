@@ -10,6 +10,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -67,5 +69,37 @@ class NotaFiscalServiceTest {
         assertEquals(NotaFiscalStatus.CANCELADA, resultado.getStatus());
         assertEquals("Erro no valor do item", resultado.getJustificativaCancelamento());
         assertEquals("nota-1", resultado.getUid());
+        assertNotNull(resultado.getDataCancelamento());
+    }
+
+    @Test
+    void consultarStatusAtualizaNotaExistenteComRetornoDoGateway() {
+        NotaFiscalService service = new NotaFiscalService(notaFiscalRepository, emissorFiscalService, vendaRepository);
+
+        NotaFiscalEntity notaExistente = NotaFiscalEntity.builder()
+                .uid("nota-1").vendaUid("venda-1").status(NotaFiscalStatus.PROCESSANDO)
+                .build();
+        when(notaFiscalRepository.findByVendaUid("venda-1")).thenReturn(Optional.of(notaExistente));
+        when(emissorFiscalService.consultarStatus("venda-1")).thenReturn(
+                ResultadoEmissaoFiscal.builder()
+                        .status(NotaFiscalStatus.AUTORIZADA)
+                        .chaveAcesso("CHAVE456")
+                        .build());
+        when(notaFiscalRepository.save(any(NotaFiscalEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        NotaFiscalEntity resultado = service.consultarStatus("venda-1");
+
+        assertEquals(NotaFiscalStatus.AUTORIZADA, resultado.getStatus());
+        assertEquals("CHAVE456", resultado.getChaveAcesso());
+    }
+
+    @Test
+    void consultarStatusLancaExcecaoQuandoNotaNaoExiste() {
+        NotaFiscalService service = new NotaFiscalService(notaFiscalRepository, emissorFiscalService, vendaRepository);
+
+        when(notaFiscalRepository.findByVendaUid("venda-1")).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> service.consultarStatus("venda-1"));
     }
 }
