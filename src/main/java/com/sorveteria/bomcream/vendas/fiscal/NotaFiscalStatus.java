@@ -6,5 +6,6 @@ public enum NotaFiscalStatus {
     AUTORIZADA,
     REJEITADA,
     CANCELADA,
-    ERRO
+    ERRO,
+    DESCONHECIDO
 }

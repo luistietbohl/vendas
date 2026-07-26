@@ -5,6 +5,7 @@ import com.sorveteria.bomcream.vendas.repository.entity.ProdutoEntity;
 import com.sorveteria.bomcream.vendas.repository.entity.VendaEntity;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestTemplate;
@@ -14,10 +15,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 class FocusNFeEmissorServiceTest {
@@ -75,5 +79,102 @@ class FocusNFeEmissorServiceTest {
         assertEquals("02", service.mapearFormaPagamento("Credito"));
         assertEquals("03", service.mapearFormaPagamento("Debito"));
         assertEquals("12", service.mapearFormaPagamento("PIX"));
+    }
+
+    @Test
+    void emitirRetornaErroQuandoFocusNFeRespondeComStatusNao2xx() {
+        RestTemplate restTemplate = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+
+        FocusNFeEmissorService service = new FocusNFeEmissorService(
+                restTemplate, "TOKEN123", "homologacao", "35242747000130");
+
+        VendaEntity venda = vendaValida();
+
+        server.expect(requestTo("https://homologacao.focusnfe.com.br/v2/nfce?ref=venda-1"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+                        .body("{\"codigo\":\"cnpj_emitente_invalido\",\"mensagem\":\"CNPJ do emitente invalido\"}")
+                        .contentType(MediaType.APPLICATION_JSON));
+
+        ResultadoEmissaoFiscal resultado = service.emitir(venda);
+
+        assertEquals(NotaFiscalStatus.ERRO, resultado.getStatus());
+        assertNotNull(resultado.getMensagemSefaz());
+        assertTrue(resultado.getMensagemSefaz().contains("422"));
+        assertTrue(resultado.getMensagemSefaz().contains("cnpj_emitente_invalido"));
+        server.verify();
+    }
+
+    @Test
+    void emitirNaoChamaOGatewayQuandoProdutoNaoTemDadosFiscaisCompletos() {
+        RestTemplate restTemplate = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+
+        FocusNFeEmissorService service = new FocusNFeEmissorService(
+                restTemplate, "TOKEN123", "homologacao", "35242747000130");
+
+        ProdutoEntity produtoSemNcm = ProdutoEntity.builder()
+                .uid("p1").nome("Sorvete Sem Ficha Fiscal").valor(new BigDecimal("15.00"))
+                .ncm(null).cfop("5102").csosn("102").unidadeComercial("UN")
+                .build();
+
+        ItemVendaEntity item = ItemVendaEntity.builder()
+                .produto(produtoSemNcm).quantidade(BigDecimal.ONE).valorItem(new BigDecimal("15.00"))
+                .build();
+
+        VendaEntity venda = VendaEntity.builder()
+                .uid("venda-2")
+                .itens(List.of(item))
+                .valorTotal(new BigDecimal("15.00"))
+                .formaPagamento("Dinheiro")
+                .create(LocalDateTime.of(2026, 7, 25, 10, 0))
+                .build();
+
+        ResultadoEmissaoFiscal resultado = service.emitir(venda);
+
+        assertEquals(NotaFiscalStatus.ERRO, resultado.getStatus());
+        assertNotNull(resultado.getMensagemSefaz());
+        assertTrue(resultado.getMensagemSefaz().contains("Sorvete Sem Ficha Fiscal"));
+        server.verify();
+    }
+
+    @Test
+    void consultarStatusMapeiaStatusDesconhecidoParaDesconhecidoEmVezDeErro() {
+        RestTemplate restTemplate = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+
+        FocusNFeEmissorService service = new FocusNFeEmissorService(
+                restTemplate, "TOKEN123", "homologacao", "35242747000130");
+
+        server.expect(requestTo("https://homologacao.focusnfe.com.br/v2/nfce/venda-1"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(
+                        "{\"status\":\"algum_status_novo\"}",
+                        MediaType.APPLICATION_JSON));
+
+        ResultadoEmissaoFiscal resultado = service.consultarStatus("venda-1");
+
+        assertEquals(NotaFiscalStatus.DESCONHECIDO, resultado.getStatus());
+        server.verify();
+    }
+
+    private VendaEntity vendaValida() {
+        ProdutoEntity produto = ProdutoEntity.builder()
+                .uid("p1").nome("Sorvete 500ml").valor(new BigDecimal("15.00"))
+                .ncm("21050010").cfop("5102").csosn("102").unidadeComercial("UN")
+                .build();
+
+        ItemVendaEntity item = ItemVendaEntity.builder()
+                .produto(produto).quantidade(BigDecimal.ONE).valorItem(new BigDecimal("15.00"))
+                .build();
+
+        return VendaEntity.builder()
+                .uid("venda-1")
+                .itens(List.of(item))
+                .valorTotal(new BigDecimal("15.00"))
+                .formaPagamento("Dinheiro")
+                .create(LocalDateTime.of(2026, 7, 25, 10, 0))
+                .build();
     }
 }
