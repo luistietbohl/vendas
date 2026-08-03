@@ -41,6 +41,10 @@ public class ProdutoService {
         entity.setValor(dto.getValor());
         entity.setTipoMedida(dto.getTipoMedida());
         entity.setCategoria(dto.getCategoria());
+        entity.setNcm(dto.getNcm());
+        entity.setCfop(dto.getCfop());
+        entity.setCsosn(dto.getCsosn());
+        entity.setUnidadeComercial(dto.getUnidadeComercial());
 
         repository.save(entity);
     }
