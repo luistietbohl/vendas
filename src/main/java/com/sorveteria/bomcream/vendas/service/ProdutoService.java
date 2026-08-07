@@ -85,11 +85,27 @@ public class ProdutoService {
                 .collect(Collectors.toList()), pageable, count);
     }
 
+    private static final String CFOP_PADRAO = "5102";
+    private static final String CSOSN_PADRAO = "102";
+    private static final String UNIDADE_COMERCIAL_PADRAO = "UN";
+
     public long aplicarNcmPadrao(String categoriaId, String ncm) {
-        Query query = new Query(Criteria.where("categoria").is(categoriaId)
+        Query queryNcm = new Query(Criteria.where("categoria").is(categoriaId)
                 .orOperator(Criteria.where("ncm").is(null), Criteria.where("ncm").is("")));
-        Update update = new Update().set("ncm", ncm);
-        return mongoTemplate.updateMulti(query, update, ProdutoEntity.class).getModifiedCount();
+        long quantidade = mongoTemplate.updateMulti(queryNcm, new Update().set("ncm", ncm), ProdutoEntity.class)
+                .getModifiedCount();
+
+        aplicarCampoSeVazio(categoriaId, "cfop", CFOP_PADRAO);
+        aplicarCampoSeVazio(categoriaId, "csosn", CSOSN_PADRAO);
+        aplicarCampoSeVazio(categoriaId, "unidadeComercial", UNIDADE_COMERCIAL_PADRAO);
+
+        return quantidade;
+    }
+
+    private void aplicarCampoSeVazio(String categoriaId, String campo, String valorPadrao) {
+        Query query = new Query(Criteria.where("categoria").is(categoriaId)
+                .orOperator(Criteria.where(campo).is(null), Criteria.where(campo).is("")));
+        mongoTemplate.updateMulti(query, new Update().set(campo, valorPadrao), ProdutoEntity.class);
     }
 
     public void delete(String id) {

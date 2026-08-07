@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -81,7 +82,16 @@ class ProdutoServiceTest {
         assertEquals(7L, quantidade);
 
         ArgumentCaptor<Update> updateCaptor = ArgumentCaptor.forClass(Update.class);
-        verify(mongoTemplate).updateMulti(any(Query.class), updateCaptor.capture(), eq(ProdutoEntity.class));
-        assertEquals("21050010", updateCaptor.getValue().getUpdateObject().get("$set", org.bson.Document.class).get("ncm"));
+        verify(mongoTemplate, org.mockito.Mockito.times(4))
+                .updateMulti(any(Query.class), updateCaptor.capture(), eq(ProdutoEntity.class));
+
+        java.util.List<org.bson.Document> sets = updateCaptor.getAllValues().stream()
+                .map(u -> u.getUpdateObject().get("$set", org.bson.Document.class))
+                .collect(java.util.stream.Collectors.toList());
+
+        assertTrue(sets.stream().anyMatch(s -> "21050010".equals(s.get("ncm"))));
+        assertTrue(sets.stream().anyMatch(s -> "5102".equals(s.get("cfop"))));
+        assertTrue(sets.stream().anyMatch(s -> "102".equals(s.get("csosn"))));
+        assertTrue(sets.stream().anyMatch(s -> "UN".equals(s.get("unidadeComercial"))));
     }
 }
