@@ -170,7 +170,7 @@ public class FocusNFeEmissorService implements EmissorFiscalService {
             itemPayload.put("numero_item", numero++);
             itemPayload.put("codigo_produto", produto.getUid());
             itemPayload.put("descricao", produto.getNome());
-            itemPayload.put("ncm", produto.getNcm());
+            itemPayload.put("codigo_ncm", produto.getNcm());
             itemPayload.put("cfop", produto.getCfop());
             itemPayload.put("unidade_comercial", produto.getUnidadeComercial());
             itemPayload.put("quantidade_comercial", item.getQuantidade());
@@ -186,7 +186,7 @@ public class FocusNFeEmissorService implements EmissorFiscalService {
     private List<Map<String, Object>> montarFormasPagamento(VendaEntity venda) {
         Map<String, Object> forma = new LinkedHashMap<>();
         forma.put("forma_pagamento", mapearFormaPagamento(venda.getFormaPagamento()));
-        forma.put("valor", venda.getValorTotal());
+        forma.put("valor_pagamento", venda.getValorTotal());
         List<Map<String, Object>> formas = new ArrayList<>();
         formas.add(forma);
         return formas;
@@ -197,11 +197,11 @@ public class FocusNFeEmissorService implements EmissorFiscalService {
             case "Dinheiro":
                 return "01";
             case "Credito":
-                return "02";
-            case "Debito":
                 return "03";
+            case "Debito":
+                return "04";
             case "PIX":
-                return "12";
+                return "17";
             default:
                 throw new IllegalArgumentException(
                         "Forma de pagamento não suportada para NFC-e: " + formaPagamento);

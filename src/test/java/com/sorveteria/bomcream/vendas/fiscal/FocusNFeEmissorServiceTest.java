@@ -55,8 +55,9 @@ class FocusNFeEmissorServiceTest {
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(header("Authorization", org.hamcrest.Matchers.startsWith("Basic ")))
                 .andExpect(jsonPath("$.items[0].cfop").value("5102"))
-                .andExpect(jsonPath("$.items[0].ncm").value("21050010"))
+                .andExpect(jsonPath("$.items[0].codigo_ncm").value("21050010"))
                 .andExpect(jsonPath("$.formas_pagamento[0].forma_pagamento").value("01"))
+                .andExpect(jsonPath("$.formas_pagamento[0].valor_pagamento").value(15.00))
                 .andRespond(withSuccess(
                         "{\"status\":\"autorizado\",\"numero\":\"12\",\"serie\":\"1\","
                                 + "\"chave_nfe\":\"CHAVE123\",\"caminho_danfe\":\"https://focusnfe/danfe/1\"}",
@@ -76,9 +77,9 @@ class FocusNFeEmissorServiceTest {
                 new RestTemplate(), "TOKEN123", "homologacao", "35242747000130");
 
         assertEquals("01", service.mapearFormaPagamento("Dinheiro"));
-        assertEquals("02", service.mapearFormaPagamento("Credito"));
-        assertEquals("03", service.mapearFormaPagamento("Debito"));
-        assertEquals("12", service.mapearFormaPagamento("PIX"));
+        assertEquals("03", service.mapearFormaPagamento("Credito"));
+        assertEquals("04", service.mapearFormaPagamento("Debito"));
+        assertEquals("17", service.mapearFormaPagamento("PIX"));
     }
 
     @Test
