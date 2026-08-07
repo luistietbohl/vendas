@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -82,6 +83,13 @@ public class ProdutoService {
         return new PageImpl<ProdutoDTO>(list.stream()
                 .map(this::converterEntityToDTO)
                 .collect(Collectors.toList()), pageable, count);
+    }
+
+    public long aplicarNcmPadrao(String categoriaId, String ncm) {
+        Query query = new Query(Criteria.where("categoria").is(categoriaId)
+                .orOperator(Criteria.where("ncm").is(null), Criteria.where("ncm").is("")));
+        Update update = new Update().set("ncm", ncm);
+        return mongoTemplate.updateMulti(query, update, ProdutoEntity.class).getModifiedCount();
     }
 
     public void delete(String id) {
