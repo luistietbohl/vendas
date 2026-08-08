@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -41,6 +42,10 @@ public class ProdutoService {
         entity.setValor(dto.getValor());
         entity.setTipoMedida(dto.getTipoMedida());
         entity.setCategoria(dto.getCategoria());
+        entity.setNcm(dto.getNcm());
+        entity.setCfop(dto.getCfop());
+        entity.setCsosn(dto.getCsosn());
+        entity.setUnidadeComercial(dto.getUnidadeComercial());
 
         repository.save(entity);
     }
@@ -78,6 +83,29 @@ public class ProdutoService {
         return new PageImpl<ProdutoDTO>(list.stream()
                 .map(this::converterEntityToDTO)
                 .collect(Collectors.toList()), pageable, count);
+    }
+
+    private static final String CFOP_PADRAO = "5102";
+    private static final String CSOSN_PADRAO = "102";
+    private static final String UNIDADE_COMERCIAL_PADRAO = "UN";
+
+    public long aplicarNcmPadrao(String categoriaId, String ncm) {
+        Query queryNcm = new Query(Criteria.where("categoria").is(categoriaId)
+                .orOperator(Criteria.where("ncm").is(null), Criteria.where("ncm").is("")));
+        long quantidade = mongoTemplate.updateMulti(queryNcm, new Update().set("ncm", ncm), ProdutoEntity.class)
+                .getModifiedCount();
+
+        aplicarCampoSeVazio(categoriaId, "cfop", CFOP_PADRAO);
+        aplicarCampoSeVazio(categoriaId, "csosn", CSOSN_PADRAO);
+        aplicarCampoSeVazio(categoriaId, "unidadeComercial", UNIDADE_COMERCIAL_PADRAO);
+
+        return quantidade;
+    }
+
+    private void aplicarCampoSeVazio(String categoriaId, String campo, String valorPadrao) {
+        Query query = new Query(Criteria.where("categoria").is(categoriaId)
+                .orOperator(Criteria.where(campo).is(null), Criteria.where(campo).is("")));
+        mongoTemplate.updateMulti(query, new Update().set(campo, valorPadrao), ProdutoEntity.class);
     }
 
     public void delete(String id) {

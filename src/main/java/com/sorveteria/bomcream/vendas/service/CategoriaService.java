@@ -32,6 +32,7 @@ public class CategoriaService {
         entity.setNome(dto.getNome());
         entity.setOrdem(dto.getOrdem());
         entity.setTipo(dto.getTipo());
+        entity.setNcmPadrao(dto.getNcmPadrao());
 
         repository.save(entity);
     }

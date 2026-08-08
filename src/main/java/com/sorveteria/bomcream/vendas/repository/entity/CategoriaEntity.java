@@ -20,4 +20,5 @@ public class CategoriaEntity {
     private String nome;
     private String tipo;
     private int ordem;
+    private String ncmPadrao;
 }

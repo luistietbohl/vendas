@@ -38,8 +38,7 @@ public class VendaController {
 
     @PostMapping
     public ResponseEntity create(@RequestBody VendaDTO dto) {
-        service.create(dto);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(service.create(dto));
     }
 
     @PutMapping("/{id}")

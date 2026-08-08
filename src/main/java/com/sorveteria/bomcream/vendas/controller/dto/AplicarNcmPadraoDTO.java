@@ -11,10 +11,7 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CategoriaDTO {
-    private String uid;
-    private String nome;
-    private String tipo;
-    private int ordem;
-    private String ncmPadrao;
+public class AplicarNcmPadraoDTO {
+    private String categoria;
+    private String ncm;
 }

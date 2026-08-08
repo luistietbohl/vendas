@@ -1,5 +1,6 @@
 package com.sorveteria.bomcream.vendas.controller;
 
+import com.sorveteria.bomcream.vendas.controller.dto.AplicarNcmPadraoDTO;
 import com.sorveteria.bomcream.vendas.controller.dto.FilterProdutoDTO;
 import com.sorveteria.bomcream.vendas.controller.dto.ProdutoDTO;
 import com.sorveteria.bomcream.vendas.service.ProdutoService;
@@ -44,6 +45,15 @@ public class ProdutoController {
     public ResponseEntity create(@RequestBody ProdutoDTO dto) {
         service.create(dto);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/aplicar-ncm-padrao")
+    public ResponseEntity aplicarNcmPadrao(@RequestBody AplicarNcmPadraoDTO dto) {
+        try {
+            return ResponseEntity.ok(service.aplicarNcmPadrao(dto.getCategoria(), dto.getNcm()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
     @PostMapping("/all")

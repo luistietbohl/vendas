@@ -19,8 +19,9 @@ public class VendaService {
     private final VendaRepository repository;
     private final ModelMapper mapper;
 
-    public void create(VendaDTO dto) {
-        repository.save(mapper.map(dto, VendaEntity.class));
+    public VendaDTO create(VendaDTO dto) {
+        VendaEntity saved = repository.save(mapper.map(dto, VendaEntity.class));
+        return converterEntityToDTO(saved);
     }
 
     public void edit(VendaDTO dto, String id) {
