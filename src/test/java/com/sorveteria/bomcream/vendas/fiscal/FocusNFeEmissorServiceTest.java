@@ -160,6 +160,31 @@ class FocusNFeEmissorServiceTest {
         server.verify();
     }
 
+    @Test
+    void resolverUrlDanfeAdicionaODominioQuandoOCaminhoForRelativo() {
+        FocusNFeEmissorService service = new FocusNFeEmissorService(
+                new RestTemplate(), "TOKEN123", "producao", "35242747000130");
+
+        assertEquals("https://api.focusnfe.com.br/notas_fiscais_consumidor/NFe123.html",
+                service.resolverUrlDanfe("/notas_fiscais_consumidor/NFe123.html"));
+    }
+
+    @Test
+    void resolverUrlDanfeMantemUmaUrlJaAbsoluta() {
+        FocusNFeEmissorService service = new FocusNFeEmissorService(
+                new RestTemplate(), "TOKEN123", "homologacao", "35242747000130");
+
+        assertEquals("https://focusnfe/danfe/1", service.resolverUrlDanfe("https://focusnfe/danfe/1"));
+    }
+
+    @Test
+    void resolverUrlDanfeMantemNuloQuandoNaoHaCaminho() {
+        FocusNFeEmissorService service = new FocusNFeEmissorService(
+                new RestTemplate(), "TOKEN123", "homologacao", "35242747000130");
+
+        assertEquals(null, service.resolverUrlDanfe(null));
+    }
+
     private VendaEntity vendaValida() {
         ProdutoEntity produto = ProdutoEntity.builder()
                 .uid("p1").nome("Sorvete 500ml").valor(new BigDecimal("15.00"))

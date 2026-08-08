@@ -224,12 +224,19 @@ public class FocusNFeEmissorService implements EmissorFiscalService {
                 .chaveAcesso(textoOuNulo(json, "chave_nfe"))
                 .protocoloAutorizacao(textoOuNulo(json, "protocolo_autorizacao"))
                 .mensagemSefaz(textoOuNulo(json, "mensagem_sefaz"))
-                .urlDanfe(textoOuNulo(json, "caminho_danfe"))
+                .urlDanfe(resolverUrlDanfe(textoOuNulo(json, "caminho_danfe")))
                 .build();
         if (resultado.getStatus() == NotaFiscalStatus.ERRO || resultado.getStatus() == NotaFiscalStatus.REJEITADA) {
             log.warn("Focus NFe retornou status de erro ({}): {}", resultado.getStatus(), resultado.getMensagemSefaz());
         }
         return resultado;
+    }
+
+    String resolverUrlDanfe(String caminho) {
+        if (caminho == null || caminho.startsWith("http://") || caminho.startsWith("https://")) {
+            return caminho;
+        }
+        return baseUrl() + caminho;
     }
 
     private String textoOuNulo(JsonNode json, String campo) {
