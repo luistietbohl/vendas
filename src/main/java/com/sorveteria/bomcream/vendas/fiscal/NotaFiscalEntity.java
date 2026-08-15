@@ -30,4 +30,5 @@ public class NotaFiscalEntity {
     private LocalDateTime dataEmissao;
     private LocalDateTime dataCancelamento;
     private String justificativaCancelamento;
+    private String cpfDestinatario;
 }

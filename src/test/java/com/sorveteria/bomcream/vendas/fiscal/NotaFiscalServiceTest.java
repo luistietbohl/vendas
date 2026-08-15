@@ -44,7 +44,7 @@ class NotaFiscalServiceTest {
         when(notaFiscalRepository.save(any(NotaFiscalEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        NotaFiscalEntity resultado = service.emitir("venda-1");
+        NotaFiscalEntity resultado = service.emitir("venda-1", null);
 
         assertEquals("venda-1", resultado.getVendaUid());
         assertEquals(NotaFiscalStatus.AUTORIZADA, resultado.getStatus());
@@ -138,5 +138,22 @@ class NotaFiscalServiceTest {
         assertEquals("venda-1", resultado.getVendaUid());
         assertEquals(NotaFiscalStatus.NAO_EMITIDA, resultado.getStatus());
         verifyNoInteractions(emissorFiscalService);
+    }
+
+    @Test
+    void emitirGravaOCpfDestinatarioNaNota() {
+        NotaFiscalService service = new NotaFiscalService(notaFiscalRepository, emissorFiscalService, vendaRepository);
+
+        VendaEntity venda = VendaEntity.builder().uid("venda-1").build();
+        when(vendaRepository.findById("venda-1")).thenReturn(Optional.of(venda));
+        when(notaFiscalRepository.findByVendaUid("venda-1")).thenReturn(Optional.empty());
+        when(emissorFiscalService.emitir(venda, "12345678900")).thenReturn(
+                ResultadoEmissaoFiscal.builder().status(NotaFiscalStatus.AUTORIZADA).build());
+        when(notaFiscalRepository.save(any(NotaFiscalEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        NotaFiscalEntity resultado = service.emitir("venda-1", "12345678900");
+
+        assertEquals("12345678900", resultado.getCpfDestinatario());
     }
 }

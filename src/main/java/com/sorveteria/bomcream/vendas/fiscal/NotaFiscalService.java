@@ -14,7 +14,7 @@ public class NotaFiscalService {
     private final EmissorFiscalService emissorFiscalService;
     private final VendaRepository vendaRepository;
 
-    public NotaFiscalEntity emitir(String vendaId) {
+    public NotaFiscalEntity emitir(String vendaId, String cpfDestinatario) {
         VendaEntity venda = vendaRepository.findById(vendaId)
                 .orElseThrow(() -> new RuntimeException("Venda não encontrada"));
 
@@ -24,8 +24,9 @@ public class NotaFiscalService {
                         .status(NotaFiscalStatus.NAO_EMITIDA)
                         .build());
 
-        ResultadoEmissaoFiscal resultado = emissorFiscalService.emitir(venda, null);
+        ResultadoEmissaoFiscal resultado = emissorFiscalService.emitir(venda, cpfDestinatario);
         aplicarResultado(nota, resultado);
+        nota.setCpfDestinatario(cpfDestinatario);
         nota.setDataEmissao(LocalDateTime.now());
         return notaFiscalRepository.save(nota);
     }

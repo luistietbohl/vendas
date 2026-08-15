@@ -27,7 +27,7 @@ class NotaFiscalControllerTest {
         NotaFiscalEntity nota = NotaFiscalEntity.builder()
                 .uid("nota-1").vendaUid("venda-1").status(NotaFiscalStatus.AUTORIZADA)
                 .chaveAcesso("CHAVE123").build();
-        when(service.emitir("venda-1")).thenReturn(nota);
+        when(service.emitir("venda-1", null)).thenReturn(nota);
 
         mockMvc.perform(post("/v1/notas-fiscais/venda-1/emitir"))
                 .andExpect(status().isOk())
@@ -78,5 +78,24 @@ class NotaFiscalControllerTest {
                         .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELADA"));
+    }
+
+    @Test
+    void emitirEnviaOCpfDoCorpoAoServico() throws Exception {
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new NotaFiscalController(service)).build();
+
+        NotaFiscalEntity nota = NotaFiscalEntity.builder()
+                .uid("nota-1").vendaUid("venda-1").status(NotaFiscalStatus.AUTORIZADA)
+                .cpfDestinatario("12345678900").build();
+        when(service.emitir("venda-1", "12345678900")).thenReturn(nota);
+
+        String body = new ObjectMapper().writeValueAsString(
+                EmitirNotaFiscalDTO.builder().cpfDestinatario("12345678900").build());
+
+        mockMvc.perform(post("/v1/notas-fiscais/venda-1/emitir")
+                        .contentType("application/json")
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cpfDestinatario").value("12345678900"));
     }
 }

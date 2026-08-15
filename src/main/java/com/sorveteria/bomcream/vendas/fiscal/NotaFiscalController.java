@@ -11,9 +11,11 @@ public class NotaFiscalController {
     private final NotaFiscalService service;
 
     @PostMapping("/{vendaId}/emitir")
-    public ResponseEntity emitir(@PathVariable String vendaId) {
+    public ResponseEntity emitir(@PathVariable String vendaId,
+                                  @RequestBody(required = false) EmitirNotaFiscalDTO dto) {
         try {
-            return ResponseEntity.ok(service.emitir(vendaId));
+            String cpfDestinatario = dto != null ? dto.getCpfDestinatario() : null;
+            return ResponseEntity.ok(service.emitir(vendaId, cpfDestinatario));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
