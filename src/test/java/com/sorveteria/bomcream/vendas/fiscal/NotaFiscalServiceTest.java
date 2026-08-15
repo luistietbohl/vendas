@@ -35,7 +35,7 @@ class NotaFiscalServiceTest {
         VendaEntity venda = VendaEntity.builder().uid("venda-1").build();
         when(vendaRepository.findById("venda-1")).thenReturn(Optional.of(venda));
         when(notaFiscalRepository.findByVendaUid("venda-1")).thenReturn(Optional.empty());
-        when(emissorFiscalService.emitir(venda)).thenReturn(
+        when(emissorFiscalService.emitir(venda, null)).thenReturn(
                 ResultadoEmissaoFiscal.builder()
                         .status(NotaFiscalStatus.AUTORIZADA)
                         .chaveAcesso("CHAVE123")

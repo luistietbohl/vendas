@@ -24,7 +24,7 @@ public class NotaFiscalService {
                         .status(NotaFiscalStatus.NAO_EMITIDA)
                         .build());
 
-        ResultadoEmissaoFiscal resultado = emissorFiscalService.emitir(venda);
+        ResultadoEmissaoFiscal resultado = emissorFiscalService.emitir(venda, null);
         aplicarResultado(nota, resultado);
         nota.setDataEmissao(LocalDateTime.now());
         return notaFiscalRepository.save(nota);

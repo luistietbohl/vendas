@@ -46,7 +46,7 @@ public class FocusNFeEmissorService implements EmissorFiscalService {
     }
 
     @Override
-    public ResultadoEmissaoFiscal emitir(VendaEntity venda) {
+    public ResultadoEmissaoFiscal emitir(VendaEntity venda, String cpfDestinatario) {
         ResultadoEmissaoFiscal erroValidacao = validarDadosFiscais(venda);
         if (erroValidacao != null) {
             return erroValidacao;
@@ -55,7 +55,7 @@ public class FocusNFeEmissorService implements EmissorFiscalService {
         String url = baseUrl() + "/v2/nfce?ref=" + venda.getUid();
         try {
             log.info("Emitindo NFC-e na Focus NFe: ref={} url={}", venda.getUid(), url);
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(montarPayload(venda), headers());
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(montarPayload(venda, cpfDestinatario), headers());
             ResponseEntity<JsonNode> response = restTemplate.postForEntity(url, request, JsonNode.class);
             logarResposta(venda.getUid(), response.getBody());
             return interpretarResposta(response.getBody());
@@ -147,7 +147,7 @@ public class FocusNFeEmissorService implements EmissorFiscalService {
         return headers;
     }
 
-    Map<String, Object> montarPayload(VendaEntity venda) {
+    Map<String, Object> montarPayload(VendaEntity venda, String cpfDestinatario) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("cnpj_emitente", cnpjEmitente);
         payload.put("data_emissao", venda.getCreate()
@@ -156,6 +156,12 @@ public class FocusNFeEmissorService implements EmissorFiscalService {
         payload.put("presenca_comprador", "1");
         payload.put("modalidade_frete", "9");
         payload.put("local_destino", "1");
+        if (!isBlank(cpfDestinatario)) {
+            payload.put("cpf_destinatario", cpfDestinatario);
+            if (!isBlank(venda.getCliente())) {
+                payload.put("nome_destinatario", venda.getCliente());
+            }
+        }
         payload.put("items", montarItens(venda));
         payload.put("formas_pagamento", montarFormasPagamento(venda));
         return payload;

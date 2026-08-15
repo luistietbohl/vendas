@@ -63,7 +63,7 @@ class FocusNFeEmissorServiceTest {
                                 + "\"chave_nfe\":\"CHAVE123\",\"caminho_danfe\":\"https://focusnfe/danfe/1\"}",
                         MediaType.APPLICATION_JSON));
 
-        ResultadoEmissaoFiscal resultado = service.emitir(venda);
+        ResultadoEmissaoFiscal resultado = service.emitir(venda, null);
 
         assertEquals(NotaFiscalStatus.AUTORIZADA, resultado.getStatus());
         assertEquals("CHAVE123", resultado.getChaveAcesso());
@@ -98,7 +98,7 @@ class FocusNFeEmissorServiceTest {
                         .body("{\"codigo\":\"cnpj_emitente_invalido\",\"mensagem\":\"CNPJ do emitente invalido\"}")
                         .contentType(MediaType.APPLICATION_JSON));
 
-        ResultadoEmissaoFiscal resultado = service.emitir(venda);
+        ResultadoEmissaoFiscal resultado = service.emitir(venda, null);
 
         assertEquals(NotaFiscalStatus.ERRO, resultado.getStatus());
         assertNotNull(resultado.getMensagemSefaz());
@@ -132,7 +132,7 @@ class FocusNFeEmissorServiceTest {
                 .create(LocalDateTime.of(2026, 7, 25, 10, 0))
                 .build();
 
-        ResultadoEmissaoFiscal resultado = service.emitir(venda);
+        ResultadoEmissaoFiscal resultado = service.emitir(venda, null);
 
         assertEquals(NotaFiscalStatus.ERRO, resultado.getStatus());
         assertNotNull(resultado.getMensagemSefaz());
@@ -202,5 +202,88 @@ class FocusNFeEmissorServiceTest {
                 .formaPagamento("Dinheiro")
                 .create(LocalDateTime.of(2026, 7, 25, 10, 0))
                 .build();
+    }
+
+    @Test
+    void emitirIncluiCpfENomeDoDestinatarioQuandoCpfInformado() {
+        RestTemplate restTemplate = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+
+        FocusNFeEmissorService service = new FocusNFeEmissorService(
+                restTemplate, "TOKEN123", "homologacao", "35242747000130");
+
+        ProdutoEntity produto = ProdutoEntity.builder()
+                .uid("p1").nome("Sorvete 500ml").valor(new BigDecimal("15.00"))
+                .ncm("21050010").cfop("5102").csosn("102").unidadeComercial("UN")
+                .build();
+
+        ItemVendaEntity item = ItemVendaEntity.builder()
+                .produto(produto).quantidade(BigDecimal.ONE).valorItem(new BigDecimal("15.00"))
+                .build();
+
+        VendaEntity venda = VendaEntity.builder()
+                .uid("venda-1")
+                .cliente("Maria Silva")
+                .itens(List.of(item))
+                .valorTotal(new BigDecimal("15.00"))
+                .formaPagamento("Dinheiro")
+                .create(LocalDateTime.of(2026, 7, 25, 10, 0))
+                .build();
+
+        server.expect(requestTo("https://homologacao.focusnfe.com.br/v2/nfce?ref=venda-1"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(jsonPath("$.cpf_destinatario").value("12345678900"))
+                .andExpect(jsonPath("$.nome_destinatario").value("Maria Silva"))
+                .andRespond(withSuccess(
+                        "{\"status\":\"autorizado\",\"numero\":\"12\",\"serie\":\"1\","
+                                + "\"chave_nfe\":\"CHAVE123\",\"caminho_danfe\":\"https://focusnfe/danfe/1\"}",
+                        MediaType.APPLICATION_JSON));
+
+        ResultadoEmissaoFiscal resultado = service.emitir(venda, "12345678900");
+
+        assertEquals(NotaFiscalStatus.AUTORIZADA, resultado.getStatus());
+        server.verify();
+    }
+
+    @Test
+    void emitirNaoIncluiCpfNemNomeQuandoCpfNaoInformado() {
+        RestTemplate restTemplate = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+
+        FocusNFeEmissorService service = new FocusNFeEmissorService(
+                restTemplate, "TOKEN123", "homologacao", "35242747000130");
+
+        VendaEntity venda = vendaValida();
+
+        server.expect(requestTo("https://homologacao.focusnfe.com.br/v2/nfce?ref=venda-1"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(jsonPath("$.cpf_destinatario").doesNotExist())
+                .andExpect(jsonPath("$.nome_destinatario").doesNotExist())
+                .andRespond(withSuccess("{\"status\":\"autorizado\"}", MediaType.APPLICATION_JSON));
+
+        service.emitir(venda, null);
+
+        server.verify();
+    }
+
+    @Test
+    void emitirIncluiCpfSemNomeQuandoClienteEmBranco() {
+        RestTemplate restTemplate = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+
+        FocusNFeEmissorService service = new FocusNFeEmissorService(
+                restTemplate, "TOKEN123", "homologacao", "35242747000130");
+
+        VendaEntity venda = vendaValida();
+
+        server.expect(requestTo("https://homologacao.focusnfe.com.br/v2/nfce?ref=venda-1"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(jsonPath("$.cpf_destinatario").value("12345678900"))
+                .andExpect(jsonPath("$.nome_destinatario").doesNotExist())
+                .andRespond(withSuccess("{\"status\":\"autorizado\"}", MediaType.APPLICATION_JSON));
+
+        service.emitir(venda, "12345678900");
+
+        server.verify();
     }
 }
